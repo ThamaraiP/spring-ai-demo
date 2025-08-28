@@ -1,0 +1,9 @@
+spring:
+  ai:
+    openai:
+      chat:
+        api-key: ${API_KEY}
+        options:
+          model: gpt-4o
+      api-key: ${API_KEY}
+debug: false
