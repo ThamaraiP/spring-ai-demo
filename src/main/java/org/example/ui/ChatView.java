@@ -39,7 +39,8 @@ public class ChatView extends VerticalLayout {
   private final ChatClient chatClient;
 
 
-  public ChatView(WeatherTools weatherTools, RagContextService ragContextService, VectorStore vectorStore, ChatClient.Builder builder, ChatMemory chatMemory) {
+  public ChatView(WeatherTools weatherTools, RagContextService ragContextService,
+      VectorStore vectorStore, ChatClient.Builder builder, ChatMemory chatMemory) {
     this.chatClient = buildChatClient(builder, vectorStore, chatMemory, weatherTools);
     // Heading
     H1 title = new H1("Spring AI Assistant");
@@ -81,13 +82,19 @@ public class ChatView extends VerticalLayout {
 
       chatArea.add(buildHtmlResponse(chatResponse));
 
-      // Scroll to bottom
-   /*   chatArea.getElement()
-          .callJsFunction("scrollTo", 0, chatArea.getElement().getProperty("scrollHeight"));
-*/
       // Clear input
       input.clear();
     });
+
+    Upload upload = buildUploadComponent(ragContextService);
+
+    // Add all components to layout
+    add(title, chatArea, inputLayout, upload);
+    setAlignItems(Alignment.CENTER);
+
+  }
+
+  private static Upload buildUploadComponent(RagContextService ragContextService) {
     MemoryBuffer buffer = new MemoryBuffer();
     Upload upload = new Upload(buffer);
 
@@ -105,11 +112,7 @@ public class ChatView extends VerticalLayout {
     upload.setMaxFiles(10);
     upload.setMaxFileSize(10 * 1024 * 1024);
     upload.setAcceptedFileTypes(".txt", ".pdf", ".md", ".doc", ".docx");
-
-    // Add all components to layout
-    add(title, chatArea, inputLayout, upload);
-    setAlignItems(Alignment.CENTER);
-
+    return upload;
   }
 
   private ChatClient buildChatClient(Builder builder, VectorStore vectorStore,
