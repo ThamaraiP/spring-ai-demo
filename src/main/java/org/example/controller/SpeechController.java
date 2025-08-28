@@ -23,7 +23,7 @@ public class SpeechController {
   }
 
   @GetMapping(value = "/speak", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-  public ResponseEntity<Resource> speak(@RequestParam String text) {
+  public ResponseEntity<Resource> speak(@RequestParam(value = "message") String text) {
     // Create prompt for speech
     SpeechPrompt prompt = new SpeechPrompt(text);
 
