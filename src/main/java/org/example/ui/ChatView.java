@@ -15,20 +15,17 @@ import com.vaadin.flow.router.Route;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.example.service.RagContextService;
+import org.example.tools.WeatherTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
-import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
@@ -42,8 +39,8 @@ public class ChatView extends VerticalLayout {
   private final ChatClient chatClient;
 
 
-  public ChatView(ChatModel chatModel, RagContextService ragContextService, VectorStore vectorStore, ChatClient.Builder builder, ChatMemory chatMemory) {
-    this.chatClient = buildChatClient(builder, vectorStore, chatMemory);
+  public ChatView(WeatherTools weatherTools, RagContextService ragContextService, VectorStore vectorStore, ChatClient.Builder builder, ChatMemory chatMemory) {
+    this.chatClient = buildChatClient(builder, vectorStore, chatMemory, weatherTools);
     // Heading
     H1 title = new H1("Spring AI Assistant");
     titleStyle(title);
@@ -75,7 +72,7 @@ public class ChatView extends VerticalLayout {
       }
 
       chatArea.add(buildUserMessage(userText));
-      String chatResponse = this.invokeChatModel(chatModel, userText, vectorStore);
+      String chatResponse = this.invokeChatModel(userText);
 
       chatArea.getElement().executeJs(
           "const el = this;" +
@@ -116,10 +113,10 @@ public class ChatView extends VerticalLayout {
   }
 
   private ChatClient buildChatClient(Builder builder, VectorStore vectorStore,
-      ChatMemory chatMemory) {
+      ChatMemory chatMemory, WeatherTools weatherTools) {
     return
         builder
-            //.defaultTools(mathTools, weatherTools)
+            .defaultTools(weatherTools)
             .defaultAdvisors(
 
                 // Absolutely don't let people ask about PHP 😆
@@ -152,8 +149,7 @@ public class ChatView extends VerticalLayout {
             .build();
   }
 
-  private String invokeChatModel(ChatModel chatModel, String userText,
-      VectorStore inMemoryDocs) {
+  private String invokeChatModel(String userText) {
 
     ChatClientRequestSpec chatPrompt = chatClient
         .prompt()
@@ -162,29 +158,10 @@ public class ChatView extends VerticalLayout {
               u.text(userText);
             });
 
-    // Call ChatModel
-    /*Prompt prompt = new Prompt(buildUserMessage(userText, inMemoryDocs));
-    ChatResponse response = chatModel.call(prompt);*/
     ChatResponse chatResponse = chatPrompt.call().chatResponse();
     return chatResponse.getResult().getOutput().getText();
-//    return response.getResult().getOutput().getText();
   }
 
-  private static UserMessage buildUserMessage(String userText, VectorStore vectorStore) {
-
-    List<org.springframework.ai.document.Document> relevantDocs = vectorStore.similaritySearch(
-        userText); // top 3
-
-
-    if (relevantDocs != null) {
-      String context = relevantDocs.stream()
-          .map(Document::getText)
-          .collect(Collectors.joining("\n"));
-      return new UserMessage("Context: " + context + "\nQuestion: " + userText);
-
-    }
-    return new UserMessage(userText);
-  }
 
   private static Div buildUserMessage(String userText) {
     // Add user message to chat area
